@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Search, User, GraduationCap, Award as IdCard, AlertCircle } from "lucide-react"
 import axios from "axios"
+import { Hash, Database, Download } from "lucide-react"
 
 const Students = () => {
   const [studentId, setStudentId] = useState("")
@@ -93,6 +94,7 @@ const Students = () => {
 
         {result && (
           <div className="space-y-4">
+            {/* CSV student details */}
             {result.found ? (
               <div className="space-y-4">
                 <div className="alert-success flex items-center space-x-2">
@@ -131,11 +133,99 @@ const Students = () => {
                 </div>
               </div>
             ) : (
-              <div className="alert-error flex items-center space-x-2">
-                <AlertCircle className="h-5 w-5" />
-                <span>{result.message}</span>
+              <div className="space-y-3">
+                <div className="alert-warning flex items-center space-x-2">
+                  <AlertCircle className="h-5 w-5" />
+                  <span>Student not found in CSV records.</span>
+                </div>
+                {result.memo?.exists && result.memo.transaction && (
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center">
+                        <User className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{result.memo.transaction.student_name}</h3>
+                        <p className="text-sm text-gray-600">Student ID: {studentId}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                        <GraduationCap className="h-5 w-5 text-gray-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">College</p>
+                          <p className="text-sm text-gray-900">{result.memo.transaction.college}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+
+            {/* Blockchain presence */}
+            <div className="mt-2 space-y-3">
+              <div className={`flex items-center space-x-2 ${result.memo?.exists ? "alert-success" : "alert-error"}`}>
+                <Database className="h-4 w-4" />
+                <span className="font-medium">
+                  {result.memo?.exists ? "Memo present in blockchain" : "No memo found in blockchain for this student ID"}
+                </span>
+              </div>
+
+              {result.memo?.exists && (
+                <div className="bg-white rounded-lg border p-3 text-sm space-y-1">
+                  <div><span className="font-medium">Hash:</span> <span className="font-mono break-all">{result.memo.hash}</span></div>
+                  <div><span className="font-medium">Block Index:</span> <span className="font-mono">{result.memo.block_index}</span></div>
+                  {result.memo.transaction && (
+                    <>
+                      <div><span className="font-medium">Student Name:</span> {result.memo.transaction.student_name}</div>
+                      <div><span className="font-medium">College:</span> {result.memo.transaction.college}</div>
+                      {typeof result.memo.transaction.verified !== 'undefined' && (
+                        <div><span className="font-medium">Verified:</span> {String(result.memo.transaction.verified)}</div>
+                      )}
+                      {result.memo.transaction.uploader && (
+                        <div><span className="font-medium">Uploaded By:</span> {result.memo.transaction.uploader}</div>
+                      )}
+                      {result.memo.transaction.original_filename && (
+                        <div><span className="font-medium">Original Filename:</span> {result.memo.transaction.original_filename}</div>
+                      )}
+                      {result.memo.transaction.tx_timestamp && (
+                        <div><span className="font-medium">Timestamp:</span> {result.memo.transaction.tx_timestamp}</div>
+                      )}
+                    </>
+                  )}
+                  <div className="mt-2 flex items-center gap-2 flex-wrap">
+                    <a
+                      href={`/api/students/${studentId}/memo/download`}
+                      className="btn-secondary inline-flex items-center space-x-2"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>Download Memo</span>
+                    </a>
+                    <div className="flex items-center space-x-2 text-xs text-gray-600">
+                      <Database className="h-4 w-4" />
+                      <a href="/export/blockchain.json" className="link-primary" target="_blank" rel="noreferrer">View Blockchain JSON</a>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {result.match && (
+                <div className="bg-white rounded-lg border p-3 text-sm">
+                  <div className="font-medium text-gray-700 mb-2">CSV vs. Memo Comparison</div>
+                  <ul className="space-y-1">
+                    <li className={result.match.student_name?.status === 'match' ? 'text-green-700' : 'text-yellow-700'}>
+                      Student Name: expected {String(result.match.student_name?.expected || '-')}, provided {String(result.match.student_name?.provided || '-')}
+                    </li>
+                    <li className={result.match.college?.status === 'match' ? 'text-green-700' : 'text-yellow-700'}>
+                      College: expected {String(result.match.college?.expected || '-')}, provided {String(result.match.college?.provided || '-')}
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
 
             <div className="flex justify-center">
               <button onClick={resetForm} className="btn-secondary">

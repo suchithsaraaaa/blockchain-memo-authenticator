@@ -1,8 +1,9 @@
-import { Link, useLocation } from "react-router-dom"
-import { Shield, Upload, Search, Users, BarChart3 } from "lucide-react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Shield, Upload, Search, Users, BarChart3, LogOut } from "lucide-react"
 
 const Navbar = () => {
   const location = useLocation()
+  const navigate = useNavigate()
 
   const navItems = [
     { path: "/", label: "Dashboard", icon: BarChart3 },
@@ -10,6 +11,12 @@ const Navbar = () => {
     { path: "/verify", label: "Verify Hash", icon: Search },
     { path: "/students", label: "Students", icon: Users },
   ]
+
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    window.dispatchEvent(new Event("auth-changed"))
+    navigate("/login")
+  }
 
   return (
     <nav className="bg-white shadow-lg border-b border-gray-200">
@@ -20,7 +27,7 @@ const Navbar = () => {
             <span className="text-xl font-bold text-gray-900">Blockchain Memo Authenticator</span>
           </div>
 
-          <div className="flex space-x-1">
+          <div className="flex items-center space-x-1">
             {navItems.map(({ path, label, icon: Icon }) => (
               <Link
                 key={path}
@@ -35,6 +42,13 @@ const Navbar = () => {
                 <span>{label}</span>
               </Link>
             ))}
+            <button
+              onClick={handleLogout}
+              className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
       </div>

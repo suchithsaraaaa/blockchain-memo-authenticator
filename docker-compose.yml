@@ -8,14 +8,17 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/files:/app/files
+      - ./backend/uploads:/app/uploads
+      - ./backend/data:/app/data
       - ./backend/students.csv:/app/students.csv
     environment:
       - PYTHONUNBUFFERED=1
+      - JWT_SECRET=dev-secret-change-me
+      - ACCESS_TOKEN_EXPIRE_MINUTES=120
     networks:
       - blockchain-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -29,6 +32,7 @@ services:
     depends_on:
       - backend
     environment:
+      # Frontend makes calls from browser, so use host-exposed backend URL
       - VITE_API_URL=http://localhost:8000
     networks:
       - blockchain-network
@@ -36,6 +40,3 @@ services:
 networks:
   blockchain-network:
     driver: bridge
-
-volumes:
-  uploaded_files:

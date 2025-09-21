@@ -2,13 +2,16 @@
 
 import { useState } from "react"
 import { UploadIcon, FileText, AlertCircle, CheckCircle, Hash } from "lucide-react"
-import axios from "axios"
+import { api, getToken } from "../lib/api"
 
 const Upload = () => {
   const [file, setFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState("")
+  const [studentId, setStudentId] = useState("")
+  const [studentName, setStudentName] = useState("")
+  const [college, setCollege] = useState("")
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
@@ -35,20 +38,30 @@ const Upload = () => {
       return
     }
 
+    if (!studentId.trim() || !studentName.trim() || !college.trim()) {
+      setError("Student ID, Name and College are required")
+      return
+    }
+
+    if (!getToken()) {
+      setError("Not authenticated. Please login first from the Login page.")
+      return
+    }
+
     const formData = new FormData()
     formData.append("file", file)
+    formData.append("student_id", studentId.trim())
+    formData.append("student_name", studentName.trim())
+    formData.append("college", college.trim())
 
     try {
       setUploading(true)
       setError("")
 
-      const response = await axios.post("/api/upload_memo", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      const { data } = await api.post("/upload_memo", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       })
-
-      setResult(response.data)
+      setResult(data)
     } catch (err) {
       setError(err.response?.data?.detail || "Upload failed")
       console.error("Upload error:", err)
@@ -61,6 +74,9 @@ const Upload = () => {
     setFile(null)
     setResult(null)
     setError("")
+    setStudentId("")
+    setStudentName("")
+    setCollege("")
   }
 
   return (
@@ -70,7 +86,22 @@ const Upload = () => {
         <p className="text-gray-600">Upload a PDF or image file to authenticate it on the blockchain</p>
       </div>
 
-      <div className="card">
+      <div className="card space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Student ID (required)</label>
+            <input className="w-full border rounded px-3 py-2" value={studentId} onChange={(e)=>setStudentId(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Student Name (required)</label>
+            <input className="w-full border rounded px-3 py-2" value={studentName} onChange={(e)=>setStudentName(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">College (required)</label>
+            <input className="w-full border rounded px-3 py-2" value={college} onChange={(e)=>setCollege(e.target.value)} />
+          </div>
+        </div>
+
         <div
           className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
             file ? "border-success-300 bg-success-50" : "border-gray-300 hover:border-primary-400"

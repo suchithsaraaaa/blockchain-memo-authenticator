@@ -2,24 +2,30 @@
 
 import { useState, useEffect } from "react"
 import { BarChart3, Shield, FileText, Database } from "lucide-react"
-import axios from "axios"
+import { api } from "../lib/api"
+import { Link } from "react-router-dom"
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [blocksExpanded, setBlocksExpanded] = useState(false)
+  const [blocks, setBlocks] = useState([])
 
   useEffect(() => {
     fetchStats()
+    const id = setInterval(fetchStats, 5000) // polling for live updates
+    return () => clearInterval(id)
   }, [])
 
   const fetchStats = async () => {
     try {
       setLoading(true)
-      const response = await axios.get("/api/blockchain/stats")
-      setStats(response.data)
+      const { data } = await api.get("/blockchain")
+      setStats(data.summary)
+      setBlocks(data.blocks || [])
     } catch (err) {
-      setError("Failed to fetch blockchain statistics")
+      setError("Failed to fetch blockchain data")
       console.error("Error fetching stats:", err)
     } finally {
       setLoading(false)
@@ -79,6 +85,24 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
+      <div className="card">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900">Blockchain Viewer</h2>
+          <button className="btn-secondary" onClick={()=>setBlocksExpanded(!blocksExpanded)}>
+            {blocksExpanded ? "Collapse" : "Expand"}
+          </button>
+        </div>
+        {blocksExpanded && (
+          <div className="mt-4 bg-gray-50 rounded p-3">
+            <pre className="text-xs overflow-x-auto">{JSON.stringify(blocks, null, 2)}</pre>
+          </div>
+        )}
+        <div className="mt-4 flex gap-2 text-sm flex-wrap">
+          <a className="text-blue-700 underline hover:text-blue-900" href="/export/blockchain.json" target="_blank" rel="noreferrer">Export Blockchain JSON</a>
+          <a className="text-blue-700 underline hover:text-blue-900" href="/export/students.json" target="_blank" rel="noreferrer">Export Students JSON</a>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="card">
@@ -145,15 +169,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
-      {stats?.latest_block && (
-        <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Latest Block</h2>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <pre className="text-sm text-gray-700 overflow-x-auto">{JSON.stringify(stats.latest_block, null, 2)}</pre>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
